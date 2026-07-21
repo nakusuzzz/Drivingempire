@@ -8,6 +8,7 @@ local ANCHOR_NAME = "DeliveryTargetAnchor"
 local DIST_HIGH = 26
 local DIST_LOW = 24
 local LOOP_INTERVAL = 0
+local COOLDOWN_TIME = 15 -- 瞬移冷卻時間已設定為 15 秒
 local PLATFORM_SIZE = Vector3.new(10, 1, 10)
 local PLATFORM_LIFE = 3
 
@@ -16,6 +17,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local currentPlatform = nil
 local platformFadeThread = nil
+local lastTeleportTime = 0
 
 local function destroyPlatform()
     if platformFadeThread then
@@ -167,6 +169,11 @@ local function updateLabel()
 end
 
 local function doTeleport()
+    local currentTime = os.clock()
+    if currentTime - lastTeleportTime < COOLDOWN_TIME then
+        return true 
+    end
+
     local anchor = findAnchor()
     if not anchor then return false end
 
@@ -183,7 +190,8 @@ local function doTeleport()
     task.wait()
 
     rootPart.CFrame = CFrame.new(targetPos, anchorCF.Position)
-
+    
+    lastTeleportTime = os.clock()
     useHigh = not useHigh
     updateLabel()
     return true
