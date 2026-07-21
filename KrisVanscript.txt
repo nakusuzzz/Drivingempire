@@ -8,7 +8,6 @@ local ANCHOR_NAME = "DeliveryTargetAnchor"
 local DIST_HIGH = 26
 local DIST_LOW = 24
 local LOOP_INTERVAL = 0
-local COOLDOWN_TIME = 15 -- 瞬移冷卻時間已設定為 15 秒
 local PLATFORM_SIZE = Vector3.new(10, 1, 10)
 local PLATFORM_LIFE = 3
 
@@ -17,40 +16,39 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local currentPlatform = nil
 local platformFadeThread = nil
-local lastTeleportTime = 0
 
 local function destroyPlatform()
-    if platformFadeThread then
-        task.cancel(platformFadeThread)
-        platformFadeThread = nil
-    end
-    if currentPlatform and currentPlatform.Parent then
-        currentPlatform:Destroy()
-    end
-    currentPlatform = nil
+if platformFadeThread then
+task.cancel(platformFadeThread)
+platformFadeThread = nil
+end
+if currentPlatform and currentPlatform.Parent then
+currentPlatform:Destroy()
+end
+currentPlatform = nil
 end
 
 local function spawnPlatformAt(position)
-    destroyPlatform()
+destroyPlatform()
 
-    local platform = Instance.new("Part")
-    platform.Name = "TeleportPlatform"
-    platform.Size = PLATFORM_SIZE
-    platform.CFrame = CFrame.new(position - Vector3.new(0, 3 + PLATFORM_SIZE.Y / 2, 0))
-    platform.Anchored = true
-    platform.CanCollide = true
-    platform.Transparency = 1
-    platform.CastShadow = false
-    platform.Parent = workspace
+local platform = Instance.new("Part")
+platform.Name = "TeleportPlatform"
+platform.Size = PLATFORM_SIZE
+platform.CFrame = CFrame.new(position - Vector3.new(0, 3 + PLATFORM_SIZE.Y / 2, 0))
+platform.Anchored = true
+platform.CanCollide = true
+platform.Transparency = 1
+platform.CastShadow = false
+platform.Parent = workspace
 
-    currentPlatform = platform
+currentPlatform = platform
 end
 
 local function schedulePlatformRemoval()
-    if platformFadeThread then task.cancel(platformFadeThread) end
-    platformFadeThread = task.delay(PLATFORM_LIFE, function()
-        destroyPlatform()
-    end)
+if platformFadeThread then task.cancel(platformFadeThread) end
+platformFadeThread = task.delay(PLATFORM_LIFE, function()
+destroyPlatform()
+end)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -112,45 +110,6 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = button
 
--- 拖動功能邏輯
-local dragging, dragInput, dragStart, startPos
-
-local function updatePos(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(
-        startPos.X.Scale, 
-        startPos.X.Offset + delta.X, 
-        startPos.Y.Scale, 
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        updatePos(dragInput)
-    end
-end)
-
 local isRunning = false
 local loopThread = nil
 local useHigh = true
@@ -160,98 +119,91 @@ local COLOR_ON = Color3.fromRGB(50, 200, 100)
 local COLOR_ERR = Color3.fromRGB(220, 60, 60)
 
 local function findAnchor()
-    return workspace:FindFirstChild(ANCHOR_NAME, true)
+return workspace:FindFirstChild(ANCHOR_NAME, true)
 end
 
 local function updateLabel()
-    local nextDist = useHigh and DIST_HIGH or DIST_LOW
-    distLabel.Text = "Next: " .. nextDist .. " studs | " .. (isRunning and "ON ✓" or "OFF")
+local nextDist = useHigh and DIST_HIGH or DIST_LOW
+distLabel.Text = "Next: " .. nextDist .. " studs | " .. (isRunning and "ON ✓" or "OFF")
 end
 
 local function doTeleport()
-    local currentTime = os.clock()
-    if currentTime - lastTeleportTime < COOLDOWN_TIME then
-        return true 
-    end
+local anchor = findAnchor()
+if not anchor then return false end
 
-    local anchor = findAnchor()
-    if not anchor then return false end
+local character = player.Character
+local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+if not rootPart then return false end
 
-    local character = player.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return false end
+local dist = useHigh and DIST_HIGH or DIST_LOW
+local anchorCF = anchor:IsA("BasePart") and anchor.CFrame or CFrame.new(anchor.Position)
+local offset = anchorCF.LookVector * dist
+local targetPos = anchorCF.Position + offset + Vector3.new(0, 3, 0)
 
-    local dist = useHigh and DIST_HIGH or DIST_LOW
-    local anchorCF = anchor:IsA("BasePart") and anchor.CFrame or CFrame.new(anchor.Position)
-    local offset = anchorCF.LookVector * dist
-    local targetPos = anchorCF.Position + offset + Vector3.new(0, 3, 0)
+spawnPlatformAt(targetPos)
+task.wait()
 
-    spawnPlatformAt(targetPos)
-    task.wait()
+rootPart.CFrame = CFrame.new(targetPos, anchorCF.Position)
 
-    rootPart.CFrame = CFrame.new(targetPos, anchorCF.Position)
-    
-    lastTeleportTime = os.clock()
-    useHigh = not useHigh
-    updateLabel()
-    return true
+useHigh = not useHigh
+updateLabel()
+return true
 end
 
 local function startLoop()
-    isRunning = true
-    button.Text = "Stop Loop"
-    button.BackgroundColor3 = COLOR_ON
-    stroke.Color = Color3.fromRGB(50, 220, 100)
-    updateLabel()
+isRunning = true
+button.Text = "Stop Loop"
+button.BackgroundColor3 = COLOR_ON
+stroke.Color = Color3.fromRGB(50, 220, 100)
+updateLabel()
 
-    loopThread = task.spawn(function()
-        while isRunning do
-            local ok = doTeleport()
-            if not ok then
-                isRunning = false
-                button.Text = "Anchor not found!"
-                button.BackgroundColor3 = COLOR_ERR
-                stroke.Color = Color3.fromRGB(255, 180, 50)
-                schedulePlatformRemoval()
-                task.delay(2, function()
-                    button.Text = "Start Loop"
-                    button.BackgroundColor3 = COLOR_OFF
-                    updateLabel()
-                end)
-                return
-            end
-            task.wait(LOOP_INTERVAL)
-        end
-    end)
+loopThread = task.spawn(function()
+while isRunning do
+local ok = doTeleport()
+if not ok then
+isRunning = false
+button.Text = "Anchor not found!"
+button.BackgroundColor3 = COLOR_ERR
+stroke.Color = Color3.fromRGB(255, 180, 50)
+schedulePlatformRemoval()
+task.delay(2, function()
+button.Text = "Start Loop"
+button.BackgroundColor3 = COLOR_OFF
+updateLabel()
+end)
+return
+end
+task.wait(LOOP_INTERVAL)
+end
+end)
 end
 
 local function stopLoop()
-    isRunning = false
-    if loopThread then
-        task.cancel(loopThread)
-        loopThread = nil
-    end
-    button.Text = "Start"
-    button.BackgroundColor3 = COLOR_OFF
-    stroke.Color = Color3.fromRGB(255, 180, 50)
-    updateLabel()
-    schedulePlatformRemoval()
+isRunning = false
+if loopThread then
+task.cancel(loopThread)
+loopThread = nil
+end
+button.Text = "Start"
+button.BackgroundColor3 = COLOR_OFF
+stroke.Color = Color3.fromRGB(255, 180, 50)
+updateLabel()
+schedulePlatformRemoval()
 end
 
 player.CharacterRemoving:Connect(function()
-    destroyPlatform()
+destroyPlatform()
 end)
 
 button.MouseEnter:Connect(function()
-    button.BackgroundColor3 = isRunning and Color3.fromRGB(80, 230, 120) or Color3.fromRGB(255, 210, 80)
+button.BackgroundColor3 = isRunning and Color3.fromRGB(80, 230, 120) or Color3.fromRGB(255, 210, 80)
 end)
 button.MouseLeave:Connect(function()
-    button.BackgroundColor3 = isRunning and COLOR_ON or COLOR_OFF
+button.BackgroundColor3 = isRunning and COLOR_ON or COLOR_OFF
 end)
 
 button.MouseButton1Click:Connect(function()
-    if isRunning then stopLoop() else startLoop() end
+if isRunning then stopLoop() else startLoop() end
 end)
 
 game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
-
