@@ -8,18 +8,15 @@ local ANCHOR_NAME = "DeliveryTargetAnchor"
 local DIST_HIGH = 26
 local DIST_LOW = 24
 
--- 冷卻時間已對調：第一段 3 秒，第二段 10 秒
-local COOLDOWN_HIGH = 3   
-local COOLDOWN_LOW = 10  
+-- 設定兩階段不同的冷卻時間
+local COOLDOWN_HIGH = 3 -- 第一次傳送（高/遠距離）的冷卻時間：10秒
+local COOLDOWN_LOW = 10   -- 第二次傳送（低/近距離）的冷卻時間：3秒
 
 local PLATFORM_SIZE = Vector3.new(10, 1, 10)
 local PLATFORM_LIFE = 3
 
 local player = Players.LocalPlayer
-
--- 避免 WaitForChild 卡住，改用一般的尋找
-local playerGui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui", 5)
-if not playerGui then return end
+local playerGui = player:WaitForChild("PlayerGui")
 
 local currentPlatform = nil
 local platformFadeThread = nil
@@ -96,7 +93,7 @@ local distLabel = Instance.new("TextLabel")
 distLabel.Size = UDim2.new(1, -20, 0, 18)
 distLabel.Position = UDim2.new(0, 10, 0, 32)
 distLabel.BackgroundTransparency = 1
-distLabel.Text = "Dist:" .. DIST_HIGH .. " | OFF"
+distLabel.Text = "Next: " .. DIST_HIGH .. "s | OFF"
 distLabel.Font = Enum.Font.Gotham
 distLabel.TextSize = 11
 distLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
@@ -176,6 +173,7 @@ local function updateLabel()
 end
 
 local function doTeleport()
+    -- 根據當前階段決定要用哪一個冷卻時間
     local currentCooldown = useHigh and COOLDOWN_HIGH or COOLDOWN_LOW
     local currentTime = os.clock()
     if currentTime - lastTeleportTime < currentCooldown then
@@ -228,7 +226,7 @@ local function startLoop()
                 end)
                 return
             end
-            task.wait(0.1)
+            task.taskwait or task.wait(0.1)
         end
     end)
 end
@@ -260,3 +258,6 @@ end)
 button.MouseButton1Click:Connect(function()
     if isRunning then stopLoop() else startLoop() end
 end)
+
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
+
