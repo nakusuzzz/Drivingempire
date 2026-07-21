@@ -259,5 +259,6 @@ button.MouseButton1Click:Connect(function()
     if isRunning then stopLoop() else startLoop() end
 end)
 
-game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
+-- game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
+
 
