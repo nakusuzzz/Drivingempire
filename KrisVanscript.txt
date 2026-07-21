@@ -7,13 +7,19 @@ local RunService = game:GetService("RunService")
 local ANCHOR_NAME = "DeliveryTargetAnchor"
 local DIST_HIGH = 26
 local DIST_LOW = 24
-local LOOP_INTERVAL = 0
-local COOLDOWN_TIME = 10 -- 瞬移冷卻時間已設定為 10 秒
+
+-- 冷卻時間已對調：第一段 3 秒，第二段 10 秒
+local COOLDOWN_HIGH = 3   
+local COOLDOWN_LOW = 10  
+
 local PLATFORM_SIZE = Vector3.new(10, 1, 10)
 local PLATFORM_LIFE = 3
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+
+-- 避免 WaitForChild 卡住，改用一般的尋找
+local playerGui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui", 5)
+if not playerGui then return end
 
 local currentPlatform = nil
 local platformFadeThread = nil
@@ -90,7 +96,7 @@ local distLabel = Instance.new("TextLabel")
 distLabel.Size = UDim2.new(1, -20, 0, 18)
 distLabel.Position = UDim2.new(0, 10, 0, 32)
 distLabel.BackgroundTransparency = 1
-distLabel.Text = "Next: " .. DIST_HIGH .. " studs | OFF"
+distLabel.Text = "Dist:" .. DIST_HIGH .. " | OFF"
 distLabel.Font = Enum.Font.Gotham
 distLabel.TextSize = 11
 distLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
@@ -164,13 +170,15 @@ local function findAnchor()
 end
 
 local function updateLabel()
+    local currentCooldown = useHigh and COOLDOWN_HIGH or COOLDOWN_LOW
     local nextDist = useHigh and DIST_HIGH or DIST_LOW
-    distLabel.Text = "Next: " .. nextDist .. " studs | " .. (isRunning and "ON ✓" or "OFF")
+    distLabel.Text = "Dist:" .. nextDist .. " | Wait:" .. currentCooldown .. "s | " .. (isRunning and "ON ✓" or "OFF")
 end
 
 local function doTeleport()
+    local currentCooldown = useHigh and COOLDOWN_HIGH or COOLDOWN_LOW
     local currentTime = os.clock()
-    if currentTime - lastTeleportTime < COOLDOWN_TIME then
+    if currentTime - lastTeleportTime < currentCooldown then
         return true 
     end
 
@@ -220,7 +228,7 @@ local function startLoop()
                 end)
                 return
             end
-            task.wait(LOOP_INTERVAL)
+            task.wait(0.1)
         end
     end)
 end
@@ -231,7 +239,7 @@ local function stopLoop()
         task.cancel(loopThread)
         loopThread = nil
     end
-    button.Text = "Start"
+    button.Text = "Start Loop"
     button.BackgroundColor3 = COLOR_OFF
     stroke.Color = Color3.fromRGB(255, 180, 50)
     updateLabel()
@@ -252,6 +260,3 @@ end)
 button.MouseButton1Click:Connect(function()
     if isRunning then stopLoop() else startLoop() end
 end)
-
-game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
-
