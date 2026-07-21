@@ -7,11 +7,8 @@ local RunService = game:GetService("RunService")
 local ANCHOR_NAME = "DeliveryTargetAnchor"
 local DIST_HIGH = 26
 local DIST_LOW = 24
-
--- 設定兩階段不同的冷卻時間
-local COOLDOWN_HIGH = 10 -- 第一次傳送（高/遠距離）的冷卻時間：10秒
-local COOLDOWN_LOW = 3   -- 第二次傳送（低/近距離）的冷卻時間：3秒
-
+local LOOP_INTERVAL = 0
+local COOLDOWN_TIME = 10 -- 瞬移冷卻時間已設定為 10 秒
 local PLATFORM_SIZE = Vector3.new(10, 1, 10)
 local PLATFORM_LIFE = 3
 
@@ -93,7 +90,7 @@ local distLabel = Instance.new("TextLabel")
 distLabel.Size = UDim2.new(1, -20, 0, 18)
 distLabel.Position = UDim2.new(0, 10, 0, 32)
 distLabel.BackgroundTransparency = 1
-distLabel.Text = "Next: " .. DIST_HIGH .. "s | OFF"
+distLabel.Text = "Next: " .. DIST_HIGH .. " studs | OFF"
 distLabel.Font = Enum.Font.Gotham
 distLabel.TextSize = 11
 distLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
@@ -167,16 +164,13 @@ local function findAnchor()
 end
 
 local function updateLabel()
-    local currentCooldown = useHigh and COOLDOWN_HIGH or COOLDOWN_LOW
     local nextDist = useHigh and DIST_HIGH or DIST_LOW
-    distLabel.Text = "Dist:" .. nextDist .. " | Wait:" .. currentCooldown .. "s | " .. (isRunning and "ON ✓" or "OFF")
+    distLabel.Text = "Next: " .. nextDist .. " studs | " .. (isRunning and "ON ✓" or "OFF")
 end
 
 local function doTeleport()
-    -- 根據當前階段決定要用哪一個冷卻時間
-    local currentCooldown = useHigh and COOLDOWN_HIGH or COOLDOWN_LOW
     local currentTime = os.clock()
-    if currentTime - lastTeleportTime < currentCooldown then
+    if currentTime - lastTeleportTime < COOLDOWN_TIME then
         return true 
     end
 
@@ -226,7 +220,7 @@ local function startLoop()
                 end)
                 return
             end
-            task.taskwait or task.wait(0.1)
+            task.wait(LOOP_INTERVAL)
         end
     end)
 end
@@ -237,7 +231,7 @@ local function stopLoop()
         task.cancel(loopThread)
         loopThread = nil
     end
-    button.Text = "Start Loop"
+    button.Text = "Start"
     button.BackgroundColor3 = COLOR_OFF
     stroke.Color = Color3.fromRGB(255, 180, 50)
     updateLabel()
@@ -259,6 +253,5 @@ button.MouseButton1Click:Connect(function()
     if isRunning then stopLoop() else startLoop() end
 end)
 
--- game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
-
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("RequestStartJobSession"):FireServer("Delivery", "jobPad")
 
