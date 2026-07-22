@@ -1,5 +1,5 @@
 --[[
-	WARNING: KrisVan Script (Special Ed.) - Step-by-Step Waypoint Flight Fixed & Anti-Outlaw Escape (100m / 5s Drop / Teleport to End) + Transparency Buttons + Close Button + Double Confirmation + Simplified/Traditional Chinese + Persistent JumpHeight & WalkSpeed
+	WARNING: KrisVan Script (Special Ed.) - Step-by-Step Waypoint Flight Fixed & Anti-Outlaw Escape (100m / 5s Drop / Teleport to End) + Transparency Buttons + Close Button + Double Confirmation + Simplified/Traditional Chinese + Persistent JumpHeight & WalkSpeed + Infinite Jump
 ]]
 
 local Players = game:GetService("Players")
@@ -16,6 +16,7 @@ local isAntiCriminalEnabled = false
 local isAntiAfkEnabled = false
 local isWalkSpeedEnabled = false
 local isJumpPowerEnabled = false
+local isInfiniteJumpEnabled = false
 local activeConnections = {}
 
 local function stopAllRoutines()
@@ -25,6 +26,7 @@ local function stopAllRoutines()
     isAntiAfkEnabled = false
     isWalkSpeedEnabled = false
     isJumpPowerEnabled = false
+    isInfiniteJumpEnabled = false
     for _, conn in ipairs(activeConnections) do
         if conn then
             pcall(function()
@@ -276,6 +278,8 @@ runMainScript = function(selectedLanguage)
             WalkSpeedToggleOn = "🏃 移動速度: [ 開啟 ]",
             JumpPowerToggleOff = "🦘 跳躍高度: [ 關閉 ]",
             JumpPowerToggleOn = "🦘 跳躍高度: [ 開啟 ]",
+            InfiniteJumpOff = "🚀 跳躍無冷卻: [ 關閉 ]",
+            InfiniteJumpOn = "🚀 跳躍無冷卻: [ 開啟 ]",
             SetA = "📍 1. 記錄當前位置為【起點 (A)】",
             SetB = "🏁 2. 記錄當前位置為【終點 (B)】",
             AfkOff = "🛡️ 防掛機: [ 關閉 ]",
@@ -314,6 +318,8 @@ runMainScript = function(selectedLanguage)
             WalkSpeedToggleOn = "🏃 移动速度: [ 开启 ]",
             JumpPowerToggleOff = "🦘 跳跃高度: [ 关闭 ]",
             JumpPowerToggleOn = "🦘 跳跃高度: [ 开启 ]",
+            InfiniteJumpOff = "🚀 跳跃无冷却: [ 关闭 ]",
+            InfiniteJumpOn = "🚀 跳跃无冷却: [ 开启 ]",
             SetA = "📍 1. 记录当前位置为【起点 (A)】",
             SetB = "🏁 2. 记录当前位置为【终点 (B)】",
             AfkOff = "🛡️ 防挂机: [ 关闭 ]",
@@ -352,6 +358,8 @@ runMainScript = function(selectedLanguage)
             WalkSpeedToggleOn = "🏃 Walk Speed: [ ON ]",
             JumpPowerToggleOff = "🦘 Jump Power: [ OFF ]",
             JumpPowerToggleOn = "🦘 Jump Power: [ ON ]",
+            InfiniteJumpOff = "🚀 Infinite Jump: [ OFF ]",
+            InfiniteJumpOn = "🚀 Infinite Jump: [ ON ]",
             SetA = "📍 1. Set Current as [Point A]",
             SetB = "🏁 2. Set Current as [Point B]",
             AfkOff = "🛡️ Anti AFK: [ OFF ]",
@@ -382,8 +390,8 @@ runMainScript = function(selectedLanguage)
     screenGui.Parent = playerGui
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 320, 0, 315)
-    frame.Position = UDim2.new(0.5, -160, 0.5, -157.5)
+    frame.Size = UDim2.new(0, 320, 0, 355)
+    frame.Position = UDim2.new(0.5, -160, 0.5, -177.5)
     frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
@@ -742,10 +750,28 @@ runMainScript = function(selectedLanguage)
     jumpPowerToggleBtn.Parent = jumpPowerBarFrame
     Instance.new("UICorner", jumpPowerToggleBtn).CornerRadius = UDim.new(0, 6)
 
+    -- 常駐功能列 1C（跳躍無冷卻開關）
+    local infiniteJumpBarFrame = Instance.new("Frame")
+    infiniteJumpBarFrame.Size = UDim2.new(1, -20, 0, 30)
+    infiniteJumpBarFrame.Position = UDim2.new(0, 10, 0, 218)
+    infiniteJumpBarFrame.BackgroundTransparency = 1
+    infiniteJumpBarFrame.Parent = frame
+
+    local infiniteJumpToggleBtn = Instance.new("TextButton")
+    infiniteJumpToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+    infiniteJumpToggleBtn.Position = UDim2.new(0, 0, 0, 0)
+    infiniteJumpToggleBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+    infiniteJumpToggleBtn.Text = L.InfiniteJumpOff
+    infiniteJumpToggleBtn.Font = Enum.Font.GothamBold
+    infiniteJumpToggleBtn.TextSize = 11
+    infiniteJumpToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    infiniteJumpToggleBtn.Parent = infiniteJumpBarFrame
+    Instance.new("UICorner", infiniteJumpToggleBtn).CornerRadius = UDim.new(0, 6)
+
     -- 常駐功能列 2（防掛機、語言切換）
     local persistentBarFrame = Instance.new("Frame")
     persistentBarFrame.Size = UDim2.new(1, -20, 0, 30)
-    persistentBarFrame.Position = UDim2.new(0, 10, 0, 218)
+    persistentBarFrame.Position = UDim2.new(0, 10, 0, 254)
     persistentBarFrame.BackgroundTransparency = 1
     persistentBarFrame.Parent = frame
 
@@ -774,7 +800,7 @@ runMainScript = function(selectedLanguage)
     -- 常駐功能列 3：透明度控制
     local alphaBarFrame = Instance.new("Frame")
     alphaBarFrame.Size = UDim2.new(1, -20, 0, 26)
-    alphaBarFrame.Position = UDim2.new(0, 10, 0, 254)
+    alphaBarFrame.Position = UDim2.new(0, 10, 0, 290)
     alphaBarFrame.BackgroundTransparency = 1
     alphaBarFrame.Parent = frame
 
@@ -828,6 +854,7 @@ runMainScript = function(selectedLanguage)
             walkSpeedBarFrame.Visible = false
             jumpPowerTipLabel.Visible = false
             jumpPowerBarFrame.Visible = false
+            infiniteJumpBarFrame.Visible = false
             persistentBarFrame.Visible = false
             alphaBarFrame.Visible = false
             for _, obj in ipairs(autoDrivePanel:GetChildren()) do obj.Visible = true end
@@ -841,13 +868,14 @@ runMainScript = function(selectedLanguage)
             walkSpeedBarFrame.Visible = false
             jumpPowerTipLabel.Visible = false
             jumpPowerBarFrame.Visible = false
+            infiniteJumpBarFrame.Visible = false
             persistentBarFrame.Visible = false
             alphaBarFrame.Visible = false
             for _, obj in ipairs(autoDrivePanel:GetChildren()) do obj.Visible = false end
             for _, obj in ipairs(deliveryPanel:GetChildren()) do obj.Visible = true end
 
         else
-            frame.Size = UDim2.new(0, 320, 0, 315)
+            frame.Size = UDim2.new(0, 320, 0, 355)
             deliveryBtn.Position = UDim2.new(0, 10, 0, 74)
             deliveryBtn.Visible = true
             
@@ -861,9 +889,12 @@ runMainScript = function(selectedLanguage)
             jumpPowerBarFrame.Position = UDim2.new(0, 10, 0, 182)
             jumpPowerBarFrame.Visible = true
 
-            persistentBarFrame.Position = UDim2.new(0, 10, 0, 218)
+            infiniteJumpBarFrame.Position = UDim2.new(0, 10, 0, 218)
+            infiniteJumpBarFrame.Visible = true
+
+            persistentBarFrame.Position = UDim2.new(0, 10, 0, 254)
             persistentBarFrame.Visible = true
-            alphaBarFrame.Position = UDim2.new(0, 10, 0, 254)
+            alphaBarFrame.Position = UDim2.new(0, 10, 0, 290)
             alphaBarFrame.Visible = true
             
             for _, obj in ipairs(autoDrivePanel:GetChildren()) do obj.Visible = false end
@@ -881,6 +912,7 @@ runMainScript = function(selectedLanguage)
             walkSpeedBarFrame.Visible = false
             jumpPowerTipLabel.Visible = false
             jumpPowerBarFrame.Visible = false
+            infiniteJumpBarFrame.Visible = false
             persistentBarFrame.Visible = false
             alphaBarFrame.Visible = false
             for _, obj in ipairs(autoDrivePanel:GetChildren()) do obj.Visible = false end
@@ -1021,6 +1053,27 @@ runMainScript = function(selectedLanguage)
             end
         end
     end)
+
+    infiniteJumpToggleBtn.Activated:Connect(function()
+        isInfiniteJumpEnabled = not isInfiniteJumpEnabled
+        if isInfiniteJumpEnabled then
+            infiniteJumpToggleBtn.Text = L.InfiniteJumpOn
+            infiniteJumpToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 100)
+        else
+            infiniteJumpToggleBtn.Text = L.InfiniteJumpOff
+            infiniteJumpToggleBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+        end
+    end)
+
+    table.insert(activeConnections, UserInputService.JumpRequest:Connect(function()
+        if isInfiniteJumpEnabled then
+            local char = player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end))
 
     table.insert(activeConnections, RunService.RenderStepped:Connect(function()
         local char = player.Character
@@ -1433,4 +1486,3 @@ runMainScript = function(selectedLanguage)
 end
 
 showLanguageSelector()
-
